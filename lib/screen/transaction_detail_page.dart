@@ -1,150 +1,128 @@
 import 'package:flutter/material.dart';
 
 class TransactionDetailPage extends StatelessWidget {
-  final String type; // 'Even' or 'Custom'
+  final String type;
   final String name;
-  final double totalAmount;
-  final int numberOfPeople;
-
-  // Only for Custom
-  final int? discountedPeople;
-  final double? discountPercentage;
+  final double amount;
+  final int totalPeople;
+  final int discPeople;
+  final double pct;
 
   const TransactionDetailPage({
     Key? key,
     required this.type,
     required this.name,
-    required this.totalAmount,
-    required this.numberOfPeople,
-    this.discountedPeople,
-    this.discountPercentage,
+    required this.amount,
+    required this.totalPeople,
+    required this.discPeople,
+    required this.pct, required List<String> breakdown,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    const backgroundColor = Color(0xFF72777F);
+    List<String> details = [];
 
-    List<String> breakdown = [];
+    details.add('Transaction type: $type');
+    details.add('Name: $name');
+    details.add('Total bill: \$${amount.toStringAsFixed(2)}');
+    details.add('Number of people: $totalPeople');
 
-    if (type == 'Custom' &&
-        discountedPeople != null &&
-        discountPercentage != null &&
-        discountedPeople! <= numberOfPeople) {
-      double totalDiscount = totalAmount * (discountPercentage! / 100);
-      double remainingAmount = totalAmount - totalDiscount;
-      int nonDiscountedPeople = numberOfPeople - discountedPeople!;
-      double regularShare = remainingAmount / nonDiscountedPeople;
+    if (type == 'Custom') {
+      details.add('Number of people with discount: $discPeople');
+      details.add('Discount percentage: ${pct.toStringAsFixed(0)}%');
 
-      for (int i = 0; i < numberOfPeople; i++) {
-        if (i < discountedPeople!) {
-          breakdown.add('Person ${i + 1}: \$0.00 (Disc)');
+      int normalPeople = totalPeople - discPeople;
+
+      // Amount discounted totally
+      double totalDiscount = (amount / totalPeople) * (pct / 100) * discPeople;
+
+      // Remaining amount to split among non-discount people
+      double remaining = amount - totalDiscount;
+
+      // Base share per non-discount person
+      double baseShare = (remaining / normalPeople);
+      double roundedBase = (baseShare * 100).floorToDouble() / 100;
+      double diff = remaining - (roundedBase * normalPeople);
+
+      int discIndex = 0;
+      int normalIndex = 0;
+
+      for (int i = 0; i < totalPeople; i++) {
+        if (i < discPeople) {
+          details.add('Person ${i + 1}: \$0.00 (Disc)');
+          discIndex++;
         } else {
-          breakdown.add(
-              'Person ${i + 1}: \$${regularShare.toStringAsFixed(2)}');
+          double personShare = roundedBase;
+          // Add the leftover cents to the last person
+          if (normalIndex == normalPeople - 1) {
+            personShare += diff;
+          }
+          details.add('Person ${i + 1}: \$${personShare.toStringAsFixed(2)}');
+          normalIndex++;
         }
+      }
+    } else {
+      // Even split
+      double baseShare = (amount / totalPeople);
+      double roundedBase = (baseShare * 100).floorToDouble() / 100;
+      double diff = amount - (roundedBase * totalPeople);
+
+      for (int i = 0; i < totalPeople; i++) {
+        double personShare = roundedBase;
+        if (i == totalPeople - 1) {
+          personShare += diff;
+        }
+        details.add('Person ${i + 1}: \$${personShare.toStringAsFixed(2)}');
       }
     }
 
     return Scaffold(
+      backgroundColor: const Color(0xFF72777F),
       appBar: AppBar(
-        backgroundColor: backgroundColor,
+        backgroundColor: const Color(0xFF72777F),
+        title: Center(
+          child: Image.asset('assets/images/logo/logo.png', height: 50),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Center(
-          child: Image.asset(
-            'assets/images/logo/logo.png',
-            height: 50,
-          ),
-        ),
-        automaticallyImplyLeading: false,
       ),
       body: Column(
         children: [
           Container(height: 50, color: Colors.white),
-          Container(height: 25, color: backgroundColor),
           Expanded(
             child: Container(
-              color: backgroundColor,
-              width: double.infinity,
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Container(
-                    width: MediaQuery.of(context).size.width * 0.95,
-                    padding: const EdgeInsets.all(20),
+              color: const Color(0xFF72777F),
+              padding: const EdgeInsets.all(20),
+              child: ListView.builder(
+                itemCount: details.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 20),
-                        _info('Transaction Type', type),
-                        _info('Total Bill', '\$${totalAmount.toStringAsFixed(2)}'),
-                        _info('Number of People', '$numberOfPeople'),
-                        if (type == 'Even') ...[
-                          const SizedBox(height: 10),
-                          _info('Each Person Pays',
-                              '\$${(totalAmount / numberOfPeople).toStringAsFixed(2)}'),
-                        ],
-                        if (type == 'Custom' &&
-                            discountedPeople != null &&
-                            discountPercentage != null) ...[
-                          const SizedBox(height: 10),
-                          _info('Number with Discount', '$discountedPeople'),
-                          _info('Discount Percentage',
-                              '${discountPercentage!.toStringAsFixed(0)}%'),
-                          const Divider(height: 30),
-                          const SizedBox(height: 10),
-                          const Text(
-                            'Breakdown',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          for (var line in breakdown)
-                            Text(
-                              line,
-                              style: const TextStyle(fontSize: 16),
-                              textAlign: TextAlign.center,
-                            ),
-                        ],
-                      ],
+                    child: Center(
+                      child: Text(
+                        details[index],
+                        style: const TextStyle(color: Colors.black, fontSize: 16),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
             ),
           ),
+          Container(height: 50, color: Colors.white),
         ],
       ),
       bottomNavigationBar: BottomAppBar(
-        color: backgroundColor,
-        child: const SizedBox(height: 50),
-      ),
-    );
-  }
-
-  Widget _info(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Text(
-        '$label: $value',
-        style: const TextStyle(fontSize: 18),
-        textAlign: TextAlign.center,
+        color: const Color(0xFF72777F),
+        child: Container(height: 50),
       ),
     );
   }

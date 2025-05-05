@@ -36,13 +36,19 @@ class _CustomSplitzPageState extends State<CustomSplitzPage> {
       return;
     }
 
-    final discShare = (a / n) * (1 - pct / 100);
-    final undShare = (a - discShare * d) / (n - d);
+    final equalShare = a / n;
+    final discAmountPerPerson = equalShare * (pct / 100);
+    final discTotal = discAmountPerPerson * d;
+    final remaining = a - discTotal;
+    final undShare = remaining / (n - d);
+
     final r = <String>[];
     for (var i = 0; i < n; i++) {
-      r.add(i < d
-          ? 'Person ${i + 1}: \$${discShare.toStringAsFixed(2)} (Disc)'
-          : 'Person ${i + 1}: \$${undShare.toStringAsFixed(2)}');
+      if (i < d) {
+        r.add('Person ${i + 1}: \$${(equalShare - discAmountPerPerson).toStringAsFixed(2)} (Disc)');
+      } else {
+        r.add('Person ${i + 1}: \$${undShare.toStringAsFixed(2)}');
+      }
     }
 
     setState(() {
@@ -50,13 +56,14 @@ class _CustomSplitzPageState extends State<CustomSplitzPage> {
       _total = '\$${a.toStringAsFixed(2)}';
     });
 
-    _saveTransaction(a, n, d, pct);
+    _saveTransaction(a, n, d, pct, r);
   }
 
-  Future<void> _saveTransaction(double amount, int totalPeople, int discPeople, double pct) async {
+  Future<void> _saveTransaction(double amount, int totalPeople, int discPeople, double pct, List<String> breakdown) async {
     final prefs = await SharedPreferences.getInstance();
     final tx = prefs.getStringList('transactions') ?? [];
-    final formatted = 'Custom|${widget.name}|${amount.toStringAsFixed(2)}|$totalPeople|$discPeople|${pct.toStringAsFixed(2)}';
+    final breakdownStr = breakdown.join(';');
+    final formatted = 'Custom|${widget.name}|${amount.toStringAsFixed(2)}|$totalPeople|$discPeople|${pct.toStringAsFixed(2)}|$breakdownStr';
     tx.add(formatted);
     await prefs.setStringList('transactions', tx);
   }

@@ -49,6 +49,7 @@ class _EvenSplitzPageState extends State<EvenSplitzPage> {
   Future<void> _save(double totalAmount, int people) async {
     final prefs = await SharedPreferences.getInstance();
     final tx = prefs.getStringList('transactions') ?? [];
+    // Save the Even transaction without discount-related information
     final formatted = 'Even|${widget.name}|${totalAmount.toStringAsFixed(2)}|$people';
     tx.add(formatted);
     await prefs.setStringList('transactions', tx);
