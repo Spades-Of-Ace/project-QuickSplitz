@@ -1,102 +1,125 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'transaction_detail_page.dart'; // Import the Transaction Detail Page
+import 'transaction_detail_page.dart';
 
-class HistoryPage extends StatelessWidget {
+class HistoryPage extends StatefulWidget {
   const HistoryPage({Key? key}) : super(key: key);
 
-  Future<List<String>> _loadTransactions() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getStringList('transactions') ?? [];
+  @override
+  _HistoryPageState createState() => _HistoryPageState();
+}
+
+class _HistoryPageState extends State<HistoryPage> {
+  List<String> _transactions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTransactions();
+  }
+
+  Future<void> _loadTransactions() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _transactions = prefs.getStringList('transactions') ?? [];
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF72777F), // Top bar color
-        title: Center(
-          child: Image.asset('assets/images/logo/logo.png', height: 50), // Logo in the AppBar
-        ),
+        backgroundColor: const Color(0xFF72777F),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Center(
+          child: Image.asset('assets/images/logo/logo.png', height: 50),
         ),
       ),
-      body: FutureBuilder<List<String>>(
-        future: _loadTransactions(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No transactions available.'));
-          }
+      body: _transactions.isEmpty
+          ? const Center(child: Text('No transactions available.'))
+          : Column(
+        children: [
+          Container(height: 50, color: Colors.white),
+          Container(height: 25, color: const Color(0xFF72777F)),
+          Expanded(
+            child: Container(
+              color: const Color(0xFF72777F),
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                itemCount: _transactions.length,
+                itemBuilder: (context, index) {
+                  final tx = _transactions[index];
+                  final parts = tx.split('|');
+                  final type = parts[0];
 
-          final transactions = snapshot.data!;
-
-          return Column(
-            children: [
-              Container(
-                height: 50, // Height of the white gap
-                color: Colors.white, // White background for the gap
-              ),
-              Container(
-                height: 25, // Height of the colored gap
-                color: const Color(0xFF72777F), // Set the desired color for the gap
-              ),
-              Expanded(
-                child: Container(
-                  color: const Color(0xFF72777F), // Set the background for transaction area to white
-                  width: double.infinity,
-                  child: ListView.builder(
-                    itemCount: transactions.length,
-                    itemBuilder: (context, index) {
-                      final transaction = transactions[index].split(": "); // Split to get name and total
-                      final transactionName = transaction[0];
-                      final transactionTotal = transaction.length > 1 ? transaction[1] : 'Unknown';
-
-                      return GestureDetector(
-                        onTap: () {
-                          // Navigate to Transaction Detail Page
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
+                    child: GestureDetector(
+                      onTap: () {
+                        if (type == 'Even' && parts.length == 4) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => TransactionDetailPage(
-                                transactionName: transactionName,
-                                totalAmount: double.tryParse(transactionTotal.split('\$')[1]) ?? 0.0,
-                                numberOfPeople: 1, // This value can be adjusted based on your logic
+                              builder: (_) => TransactionDetailPage(
+                                type: 'Even',
+                                name: parts[1],
+                                totalAmount:
+                                double.tryParse(parts[2]) ?? 0.0,
+                                numberOfPeople:
+                                int.tryParse(parts[3]) ?? 0,
                               ),
                             ),
                           );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.white, // Gray background for transaction
-                              borderRadius: BorderRadius.circular(10), // Rounded corners
+                        } else if (type == 'Custom' && parts.length == 6) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => TransactionDetailPage(
+                                type: 'Custom',
+                                name: parts[1],
+                                totalAmount:
+                                double.tryParse(parts[2]) ?? 0.0,
+                                numberOfPeople:
+                                int.tryParse(parts[3]) ?? 0,
+                                discountedPeople:
+                                int.tryParse(parts[4]) ?? 0,
+                                discountPercentage:
+                                double.tryParse(parts[5]) ?? 0.0,
+                              ),
                             ),
-                            child: Text(
-                              transactionName, // Display the transaction name
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
-                            ),
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${parts[0]} - ${parts[1]}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ),
+                      ),
+                    ),
+                  );
+                },
               ),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: BottomAppBar(
-        color: const Color(0xFF72777F), // Bottom bar color
-        child: Container(), // No buttons in the bottom bar
+        color: const Color(0xFF72777F),
+        child: const SizedBox(height: 50),
       ),
     );
   }

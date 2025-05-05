@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
-import 'even_splitz_page.dart'; // Import the Even Splitz Page
+import 'package:quicksplitz/screen/even_splitz_page.dart';
+import 'package:quicksplitz/screen/custom_splitz_page.dart';
 
 class SplitSelectionPage extends StatelessWidget {
-  const SplitSelectionPage({Key? key}) : super(key: key);
+  final String name;
+  final String imagePath;
+
+  const SplitSelectionPage({
+    Key? key,
+    required this.name,
+    required this.imagePath,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -11,36 +19,43 @@ class SplitSelectionPage extends StatelessWidget {
         backgroundColor: const Color(0xFF72777F),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
         ),
-        title: Center(
-          child: Image.asset('assets/images/logo/logo.png', height: 50),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(imagePath, height: 50),
+            const Spacer(),
+          ],
         ),
       ),
       body: Container(
-        color: Colors.white, // White background for the page
+        color: Colors.white,
         width: double.infinity,
         height: double.infinity,
         child: Center(
-          child: const Text(
-            'Select a Split Option',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          child: Text(
+            'Select a Split Option, $name',
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
           ),
         ),
       ),
       bottomNavigationBar: BottomAppBar(
-        color: const Color(0xFF72777F), // Bottom bar color
+        color: const Color(0xFF72777F),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             ElevatedButton(
               onPressed: () {
-                // Navigate to Even Splitz Page
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const EvenSplitzPage(imagePath: '',)),
+                  MaterialPageRoute(
+                    builder: (_) => EvenSplitzPage(
+                      name: name,
+                      imagePath: imagePath,
+                    ),
+                  ),
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -54,7 +69,15 @@ class SplitSelectionPage extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () {
-                // Navigate to Custom Splitz Page (not implemented yet)
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CustomSplitzPage(
+                      name: name,
+                      imagePath: imagePath,
+                    ),
+                  ),
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,
