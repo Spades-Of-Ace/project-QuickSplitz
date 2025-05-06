@@ -37,17 +37,25 @@ class _CustomSplitzPageState extends State<CustomSplitzPage> {
     }
 
     final equalShare = a / n;
-    final discAmountPerPerson = equalShare * (pct / 100);
-    final discTotal = discAmountPerPerson * d;
-    final remaining = a - discTotal;
-    final undShare = remaining / (n - d);
+    final discountedPay = equalShare * (1 - pct / 100);
+    final discountedTotal = discountedPay * d;
+
+    final remaining = a - discountedTotal;
+    final payingPeople = n - d;
+
+    if (payingPeople <= 0) {
+      _showError('No one left to cover the rest.');
+      return;
+    }
+
+    final undiscShare = remaining / payingPeople;
 
     final r = <String>[];
     for (var i = 0; i < n; i++) {
       if (i < d) {
-        r.add('Person ${i + 1}: \$${(equalShare - discAmountPerPerson).toStringAsFixed(2)} (Disc)');
+        r.add('Person ${i + 1}: \$${discountedPay.toStringAsFixed(2)} (Disc)');
       } else {
-        r.add('Person ${i + 1}: \$${undShare.toStringAsFixed(2)}');
+        r.add('Person ${i + 1}: \$${undiscShare.toStringAsFixed(2)}');
       }
     }
 

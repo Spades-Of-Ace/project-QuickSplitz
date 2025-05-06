@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'custom_splitz_detail.dart';
 
 class TransactionDetailPage extends StatelessWidget {
   final String type;
@@ -7,6 +8,7 @@ class TransactionDetailPage extends StatelessWidget {
   final int totalPeople;
   final int discPeople;
   final double pct;
+  final List<String> breakdown;
 
   const TransactionDetailPage({
     Key? key,
@@ -15,57 +17,25 @@ class TransactionDetailPage extends StatelessWidget {
     required this.amount,
     required this.totalPeople,
     required this.discPeople,
-    required this.pct, required List<String> breakdown,
+    required this.pct,
+    required this.breakdown,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     List<String> details = [];
 
+    // Common details for both split types
     details.add('Transaction type: $type');
     details.add('Name: $name');
     details.add('Total bill: \$${amount.toStringAsFixed(2)}');
     details.add('Number of people: $totalPeople');
 
-    if (type == 'Custom') {
-      details.add('Number of people with discount: $discPeople');
-      details.add('Discount percentage: ${pct.toStringAsFixed(0)}%');
-
-      int normalPeople = totalPeople - discPeople;
-
-      // Amount discounted totally
-      double totalDiscount = (amount / totalPeople) * (pct / 100) * discPeople;
-
-      // Remaining amount to split among non-discount people
-      double remaining = amount - totalDiscount;
-
-      // Base share per non-discount person
-      double baseShare = (remaining / normalPeople);
-      double roundedBase = (baseShare * 100).floorToDouble() / 100;
-      double diff = remaining - (roundedBase * normalPeople);
-
-      int discIndex = 0;
-      int normalIndex = 0;
-
-      for (int i = 0; i < totalPeople; i++) {
-        if (i < discPeople) {
-          details.add('Person ${i + 1}: \$0.00 (Disc)');
-          discIndex++;
-        } else {
-          double personShare = roundedBase;
-          // Add the leftover cents to the last person
-          if (normalIndex == normalPeople - 1) {
-            personShare += diff;
-          }
-          details.add('Person ${i + 1}: \$${personShare.toStringAsFixed(2)}');
-          normalIndex++;
-        }
-      }
-    } else {
-      // Even split
+    // Even Split logic
+    if (type == 'Even') {
       double baseShare = (amount / totalPeople);
       double roundedBase = (baseShare * 100).floorToDouble() / 100;
-      double diff = amount - (roundedBase * totalPeople);
+      double diff = double.parse((amount - (roundedBase * totalPeople)).toStringAsFixed(2));
 
       for (int i = 0; i < totalPeople; i++) {
         double personShare = roundedBase;
@@ -73,6 +43,42 @@ class TransactionDetailPage extends StatelessWidget {
           personShare += diff;
         }
         details.add('Person ${i + 1}: \$${personShare.toStringAsFixed(2)}');
+      }
+    }
+
+    // Custom Split logic
+    else if (type == 'Custom') {
+      details.add('Number of people with discount: $discPeople');
+      details.add('Discount percentage: ${pct.toStringAsFixed(0)}%');
+
+      int normalPeople = totalPeople - discPeople;  // People without discount
+
+      // Calculate the total discount amount
+      double totalDiscount = (amount / totalPeople) * (pct / 100) * discPeople;
+      double remaining = amount - totalDiscount;  // Remaining amount to be split
+
+      // Split remaining amount among normal people
+      double baseShare = remaining / normalPeople;
+      double roundedBase = (baseShare * 100).floorToDouble() / 100;
+      double diff = double.parse((remaining - (roundedBase * normalPeople)).toStringAsFixed(2));
+
+      int discIndex = 0;
+      int normalIndex = 0;
+
+      // Iterate through totalPeople to display the breakdown
+      for (int i = 0; i < totalPeople; i++) {
+        if (discIndex < discPeople) {
+          details.add('Person ${i + 1}: \$0.00 (Disc)');
+          discIndex++;
+        } else {
+          // Ensure people without discount share the remaining amount
+          double personShare = roundedBase;
+          if (normalIndex == normalPeople - 1) {
+            personShare += diff;
+          }
+          details.add('Person ${i + 1}: \$${personShare.toStringAsFixed(2)}');
+          normalIndex++;
+        }
       }
     }
 
